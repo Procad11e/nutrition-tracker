@@ -3,7 +3,6 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Methode nicht erlaubt' });
     }
 
-    // Nutzt deinen neuen OpenRouter-Key, den du in Vercel gespeichert hast
     const apiKey = process.env.GEMINI_API_KEY; 
     
     if (!apiKey) {
@@ -11,11 +10,9 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Extrahiere die Prompts aus dem Format, das deine index.html losschickt
         const systemPrompt = req.body.contents[0].parts[0].text;
         const userInput = req.body.contents[0].parts[1].text;
 
-        // Anfrage an OpenRouter senden
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: 'POST',
             headers: {
@@ -25,7 +22,8 @@ export default async function handler(req, res) {
                 'X-Title': 'Nutrition Tracker'
             },
             body: JSON.stringify({
-                model: "google/gemini-2-flash:free", // Nutzt Gemini 2 Flash völlig kostenlos und ohne IP-Sperre
+                // GEÄNDERT: Auf die offizielle und gültige OpenRouter Model-ID
+                model: "google/gemini-2-flash", 
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userInput }
@@ -41,8 +39,6 @@ export default async function handler(req, res) {
 
         const aiText = data.choices?.[0]?.message?.content || '';
 
-        // WICHTIGER TRICK: Wir verpacken die Antwort im alten Google-Format,
-        // damit deine index.html fehlerfrei weiterarbeitet!
         const geminiFormat = {
             candidates: [
                 {
