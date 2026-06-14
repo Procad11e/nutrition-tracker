@@ -5,16 +5,8 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.GEMINI_API_KEY; 
     
-    // HIER IST DEIN ERSEHNTER OUTPUT:
-    // Wir schneiden den Key sicher aus, damit du ihn im Browser prüfen kannst!
-    const maskedKey = apiKey 
-        ? `${apiKey.substring(0, 12)}...${apiKey.substring(apiKey.length - 4)}` 
-        : '⚠️ KEIN KEY IN DEN VERCEL-EINSTELLUNGEN GEFOUNDEN!';
-
     if (!apiKey) {
-        return res.status(500).json({ 
-            error: `API-Key fehlt völlig. Geladener Wert: ${maskedKey}` 
-        });
+        return res.status(500).json({ error: 'API-Key auf Vercel fehlt.' });
     }
 
     try {
@@ -30,8 +22,8 @@ export default async function handler(req, res) {
                 'X-Title': 'Nutrition Tracker'
             },
             body: JSON.stringify({
-                // Modell-ID angepasst auf den aktuellen Standard
-                model: "google/gemini-2.5-flash", 
+                // GEÄNDERT: Dieses Modell ist bei OpenRouter komplett kostenlos (0,00 $)
+                model: "google/gemini-1.5-flash:free", 
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userInput }
@@ -42,9 +34,8 @@ export default async function handler(req, res) {
         const data = await response.json();
 
         if (!response.ok) {
-            // Wenn OpenRouter meckert, packen wir deinen Key direkt in die Fehlermeldung für den Browser!
             return res.status(response.status).json({ 
-                error: `OpenRouter meldet: ${data.error?.message || 'Fehler'}. -> Dein aktiver Vercel-Key ist: ${maskedKey}` 
+                error: `OpenRouter Fehler: ${data.error?.message || 'Fehler'}` 
             });
         }
 
@@ -65,8 +56,6 @@ export default async function handler(req, res) {
         return res.status(200).json(geminiFormat);
 
     } catch (error) {
-        return res.status(500).json({ 
-            error: `Server-Fehler: ${error.message} -> Dein aktiver Vercel-Key ist: ${maskedKey}` 
-        });
+        return res.status(500).json({ error: 'Server-Fehler: ' + error.message });
     }
 }
