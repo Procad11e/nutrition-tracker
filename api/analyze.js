@@ -22,8 +22,8 @@ export default async function handler(req, res) {
                 'X-Title': 'Nutrition Tracker'
             },
             body: JSON.stringify({
-                // JETZT KORRIGIERT: Mit der ".0" im Namen!
-                model: "google/gemini-2.0-flash", 
+                // JETZT EXAKT: So heißt das kostenlose Modell bei OpenRouter
+                model: "google/gemini-2.0-flash:free", 
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userInput }
