@@ -22,12 +22,14 @@ export default async function handler(req, res) {
                 'X-Title': 'Nutrition Tracker'
             },
             body: JSON.stringify({
-                // GEÄNDERT: Dieses Modell ist bei OpenRouter komplett kostenlos (0,00 $)
-                model: "google/gemini-1.5-flash:free", 
+                // WECHSEL: Dieses Modell ist bei OpenRouter dauerhaft gratis und aktiv!
+                model: "meta-llama/llama-3.1-8b-instruct:free", 
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userInput }
-                ]
+                ],
+                // Wir zwingen die KI, reines JSON zu antworten
+                response_format: { type: "json_object" }
             })
         });
 
@@ -41,6 +43,7 @@ export default async function handler(req, res) {
 
         const aiText = data.choices?.[0]?.message?.content || '';
 
+        // Wir packen es wieder ins Google-Format für dein Frontend
         const geminiFormat = {
             candidates: [
                 {
