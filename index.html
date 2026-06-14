@@ -33,7 +33,6 @@
         }
         .ios-button {
             transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-            active:scale-95;
         }
         .ios-button:active {
             transform: scale(0.95);
@@ -154,22 +153,10 @@
             </div>
 
             <div class="space-y-3">
-                <label class="block text-sm font-medium text-gray-700">Google Gemini API Key</label>
-                <input 
-                    type="password" 
-                    id="apiKeyInput" 
-                    placeholder="AIza..." 
-                    class="w-full px-4 py-3 bg-gray-100 rounded-xl border border-gray-300 focus:border-blue-500 focus:bg-white transition text-sm"
-                />
-                <p class="text-xs text-gray-500">
-                    Kostenlos unter <a href="https://aistudio.google.com/app/apikeys" target="_blank" class="text-blue-600 underline">Google AI Studio</a> generieren
-                </p>
+                <p class="text-sm text-gray-600">Dein API-Key ist jetzt sicher über die Vercel-Cloud geschützt.</p>
             </div>
 
             <div class="pt-4 space-y-2 border-t border-gray-200">
-                <button id="saveSettingsBtn" class="ios-button w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition">
-                    Speichern
-                </button>
                 <button id="resetDataBtn" class="ios-button w-full bg-red-100 text-red-600 py-3 rounded-xl font-semibold hover:bg-red-200 transition">
                     Tägliche Daten löschen
                 </button>
@@ -184,14 +171,11 @@
         // ==================== STATE MANAGEMENT ====================
         const state = {
             meals: [],
-            apiKey: localStorage.getItem('gemini_api_key') || '',
         };
 
         const CONFIG = {
-    	    API_ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+            API_ENDPOINT: '/api/analyze', // Zeigt jetzt direkt auf deine Serverless Function
             STORAGE_KEY: 'nutrition_meals_',
-            API_KEY_STORAGE: 'gemini_api_key',
-};
         };
 
         // ==================== INITIALIZATION ====================
@@ -211,23 +195,10 @@
 
             document.getElementById('settingsBtn').addEventListener('click', () => {
                 document.getElementById('settingsModal').classList.remove('hidden');
-                document.getElementById('apiKeyInput').value = state.apiKey;
             });
 
             document.getElementById('closeSettingsBtn').addEventListener('click', () => {
                 document.getElementById('settingsModal').classList.add('hidden');
-            });
-
-            document.getElementById('saveSettingsBtn').addEventListener('click', () => {
-                const newKey = document.getElementById('apiKeyInput').value.trim();
-                if (newKey) {
-                    state.apiKey = newKey;
-                    localStorage.setItem(CONFIG.API_KEY_STORAGE, newKey);
-                    showNotification('API Key gespeichert ✓', 'success');
-                    document.getElementById('settingsModal').classList.add('hidden');
-                } else {
-                    showNotification('API Key erforderlich', 'error');
-                }
             });
 
             document.getElementById('resetDataBtn').addEventListener('click', () => {
@@ -265,11 +236,6 @@
                 return;
             }
 
-            if (!state.apiKey) {
-                showNotification('API Key erforderlich (Einstellungen)', 'error');
-                return;
-            }
-
             setLoadingState(true);
 
             try {
@@ -288,24 +254,22 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Fehler: ' + error.message, 'error');
+                showNotification('Fehler bei der KI-Analyse.', 'error');
             } finally {
                 setLoadingState(false);
             }
         }
 
         async function analyzeWithGemini(foodDescription) {
-            const systemPrompt = `Du bist ein Ernährungsexperte mit Spezialwissen über deutsche Supermarkt-Produkte (Aldi, Lidl, Rewe, Edeka, Penny, Ja!, Gut&Günstig).
-
-Analysiere die Mahlzeit und antworte AUSSCHLIESSLICH mit diesem JSON-Format (keine weitere Erklärung):
+            const systemPrompt = `Du bist ein Ernährungsexperte mit Spezialwissen über deutsche Supermarkt-Produkte.
+Analysiere die eingegebene Mahlzeit und gib die Nährwerte exakt im vorgegebenen JSON-Format zurück.
+Format:
 {
-  "kcal": <Zahl>,
-  "protein": <Zahl in Gramm>,
-  "carbs": <Zahl in Gramm>,
-  "fat": <Zahl in Gramm>
-}
-
-Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen. Bedenke typische Portionsgrößen.`;
+  "kcal": 350,
+  "protein": 25,
+  "carbs": 40,
+  "fat": 10
+}`;
 
             const requestBody = {
                 contents: [
@@ -317,17 +281,13 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
                     }
                 ],
                 generationConfig: {
-                    temperature: 0.7,
-                    topK: 40,
-                    topP: 0.95,
+                    temperature: 0.2,
+                    responseMimeType: "application/json"
                 }
             };
 
             try {
-                const url = `${CONFIG.API_ENDPOINT}?key=${encodeURIComponent(state.apiKey)}`;
-                console.log('Using model: gemini-2.0-flash'); 
-                
-                const response = await fetch(url, {
+                const response = await fetch(CONFIG.API_ENDPOINT, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -336,39 +296,22 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    const errorMsg = errorData.error?.message || `API Error: ${response.status}`;
-                    console.error('API Error:', errorMsg);
-                    throw new Error(errorMsg);
+                    throw new Error(`API Error: ${response.status}`);
                 }
 
                 const data = await response.json();
                 const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                
-                console.log('Raw response:', responseText);
-                
-                // Extract JSON from response
-                const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-                if (!jsonMatch) {
-                    throw new Error('Keine gültigen Nährwerte in der Antwort');
-                }
-
-                const nutrition = JSON.parse(jsonMatch[0]);
-                
-                // Validate response
-                if (!nutrition.kcal || !nutrition.protein || !nutrition.carbs || !nutrition.fat) {
-                    throw new Error('Unvollständige Nährwertdaten');
-                }
+                const nutrition = JSON.parse(responseText);
 
                 return {
-                    kcal: Math.round(nutrition.kcal),
-                    protein: Math.round(nutrition.protein * 10) / 10,
-                    carbs: Math.round(nutrition.carbs * 10) / 10,
-                    fat: Math.round(nutrition.fat * 10) / 10
+                    kcal: Math.round(nutrition.kcal || 0),
+                    protein: Math.round((nutrition.protein || 0) * 10) / 10,
+                    carbs: Math.round((nutrition.carbs || 0) * 10) / 10,
+                    fat: Math.round((nutrition.fat || 0) * 10) / 10
                 };
 
             } catch (error) {
-                console.error('Gemini API Error:', error);
+                console.error('Proxy Error:', error);
                 throw error;
             }
         }
@@ -379,9 +322,9 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
             updateSummary();
         }
 
+        // (Restliche Hilfsfunktionen bleiben identisch für die Funktionalität)
         function renderMeals() {
             const container = document.getElementById('mealsContainer');
-            
             if (state.meals.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-12">
@@ -389,11 +332,9 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                         </svg>
                         <p class="text-gray-400 text-sm">Füge deine erste Mahlzeit hinzu</p>
-                    </div>
-                `;
+                    </div>`;
                 return;
             }
-
             container.innerHTML = state.meals.map(meal => `
                 <div class="meal-card bg-white rounded-2xl p-4 mb-3 border border-gray-200 shadow-sm hover:shadow-md transition">
                     <div class="flex items-start justify-between mb-3">
@@ -408,25 +349,12 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
                         </button>
                     </div>
                     <div class="grid grid-cols-4 gap-2">
-                        <div class="bg-blue-50 rounded-lg p-2 text-center">
-                            <p class="text-xs text-gray-600">Kcal</p>
-                            <p class="text-sm font-bold text-blue-600">${meal.kcal}</p>
-                        </div>
-                        <div class="bg-green-50 rounded-lg p-2 text-center">
-                            <p class="text-xs text-gray-600">Protein</p>
-                            <p class="text-sm font-bold text-green-600">${meal.protein}g</p>
-                        </div>
-                        <div class="bg-orange-50 rounded-lg p-2 text-center">
-                            <p class="text-xs text-gray-600">Carbs</p>
-                            <p class="text-sm font-bold text-orange-600">${meal.carbs}g</p>
-                        </div>
-                        <div class="bg-red-50 rounded-lg p-2 text-center">
-                            <p class="text-xs text-gray-600">Fett</p>
-                            <p class="text-sm font-bold text-red-600">${meal.fat}g</p>
-                        </div>
+                        <div class="bg-blue-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-600">Kcal</p><p class="text-sm font-bold text-blue-600">${meal.kcal}</p></div>
+                        <div class="bg-green-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-600">Protein</p><p class="text-sm font-bold text-green-600">${meal.protein}g</p></div>
+                        <div class="bg-orange-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-600">Carbs</p><p class="text-sm font-bold text-orange-600">${meal.carbs}g</p></div>
+                        <div class="bg-red-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-600">Fett</p><p class="text-sm font-bold text-red-600">${meal.fat}g</p></div>
                     </div>
-                </div>
-            `).join('');
+                </div>`).join('');
         }
 
         function updateSummary() {
@@ -453,7 +381,6 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
             document.getElementById('dateDisplay').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
         }
 
-        // ==================== STORAGE ====================
         function saveMealsToStorage() {
             const today = new Date().toISOString().split('T')[0];
             localStorage.setItem(CONFIG.STORAGE_KEY + today, JSON.stringify(state.meals));
@@ -470,7 +397,6 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
             localStorage.removeItem(CONFIG.STORAGE_KEY + today);
         }
 
-        // ==================== HELPERS ====================
         function deleteMeal(id) {
             state.meals = state.meals.filter(meal => meal.id !== id);
             saveMealsToStorage();
@@ -482,7 +408,6 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
             const btn = document.getElementById('addBtn');
             const spinner = document.getElementById('addSpinner');
             const text = document.getElementById('addBtnText');
-            
             if (loading) {
                 btn.disabled = true;
                 spinner.classList.remove('hidden');
@@ -498,17 +423,10 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
 
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
-            const colors = {
-                success: 'bg-green-500',
-                error: 'bg-red-500',
-                warning: 'bg-yellow-500',
-                info: 'bg-blue-500'
-            };
-            
-            notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg text-sm z-40 animate-pulse max-w-xs md:max-w-sm`;
+            const colors = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-yellow-500', info: 'bg-blue-500' };
+            notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg text-sm z-40 max-w-xs`;
             notification.textContent = message;
             document.body.appendChild(notification);
-            
             setTimeout(() => {
                 notification.style.opacity = '0';
                 notification.style.transition = 'opacity 0.3s';
@@ -532,22 +450,18 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
             URL.revokeObjectURL(url);
         }
 
-        // Auto reset at midnight
         function setupMidnightReset() {
             const now = new Date();
             const tomorrow = new Date(now);
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setHours(0, 0, 0, 0);
-            
             const timeUntilMidnight = tomorrow - now;
-            
             setTimeout(() => {
                 clearMealsFromStorage();
                 location.reload();
                 setupMidnightReset();
             }, timeUntilMidnight);
         }
-
         setupMidnightReset();
     </script>
 </body>
