@@ -3,465 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Nutrition Tracker">
-    <meta name="theme-color" content="#ffffff">
-    <title>Nutrition Tracker</title>
+    <title>Nutrition Tracker Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        * {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-        input, textarea, button {
-            -webkit-user-select: text;
-            user-select: text;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            padding: 0;
-            margin: 0;
-        }
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .ios-button {
-            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-        }
-        .ios-button:active {
-            transform: scale(0.95);
-            opacity: 0.7;
-        }
-        .meal-card {
-            animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .spinner {
-            border: 3px solid rgba(59, 130, 246, 0.1);
-            border-top-color: #3b82f6;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        input::placeholder {
-            color: #9ca3af;
-        }
-        input:focus, textarea:focus {
-            outline: none;
-        }
-    </style>
 </head>
-<body class="bg-gray-50">
-    <div class="max-w-md mx-auto min-h-screen flex flex-col bg-white md:shadow-2xl">
-        <!-- Header -->
-        <div class="glass-effect sticky top-0 z-50 px-4 py-4 border-b border-gray-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Nutrition</h1>
-                    <p class="text-xs text-gray-500" id="dateDisplay">Heute</p>
-                </div>
-                <button id="settingsBtn" class="ios-button p-2 hover:bg-gray-100 rounded-full transition">
-                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                </button>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-700">
+        <h1 class="text-2xl font-bold text-center mb-6 text-emerald-400">🥗 KI Nährwert Tracker</h1>
+        
+        <div class="space-y-4">
+            <div>
+                <label for="foodInput" class="block text-sm font-medium text-gray-400 mb-1">Was hast du gegessen?</label>
+                <input type="text" id="foodInput" placeholder="z.B. 200g Hähnchenbrust mit 100g Reis" 
+                       class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-emerald-500 text-white placeholder-gray-500">
             </div>
+            
+            <button id="submitBtn" onclick="trackMeal()" 
+                    class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50">
+                Mahlzeit analysieren
+            </button>
         </div>
 
-        <!-- Daily Summary -->
-        <div class="px-4 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-white rounded-2xl p-3 shadow-sm">
-                    <p class="text-xs text-gray-500 font-medium">Kcal</p>
-                    <p class="text-2xl font-bold text-blue-600" id="totalKcal">0</p>
-                </div>
-                <div class="bg-white rounded-2xl p-3 shadow-sm">
-                    <p class="text-xs text-gray-500 font-medium">Protein</p>
-                    <p class="text-2xl font-bold text-green-600" id="totalProtein">0g</p>
-                </div>
-                <div class="bg-white rounded-2xl p-3 shadow-sm">
-                    <p class="text-xs text-gray-500 font-medium">Carbs</p>
-                    <p class="text-2xl font-bold text-orange-600" id="totalCarbs">0g</p>
-                </div>
-                <div class="bg-white rounded-2xl p-3 shadow-sm">
-                    <p class="text-xs text-gray-500 font-medium">Fett</p>
-                    <p class="text-2xl font-bold text-red-600" id="totalFat">0g</p>
-                </div>
-            </div>
+        <div id="loading" class="hidden text-center my-4 text-gray-400 animate-pulse">
+            KI berechnet Nährwerte...
         </div>
 
-        <!-- Main Content -->
-        <div class="flex-1 overflow-y-auto px-4 py-4 pb-32" id="mealsContainer">
-            <div class="text-center py-12">
-                <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                <p class="text-gray-400 text-sm">Füge deine erste Mahlzeit hinzu</p>
-            </div>
-        </div>
+        <div id="errorMessage" class="hidden mt-4 p-3 bg-red-900/50 border border-red-500 text-red-200 rounded-lg text-sm"></div>
 
-        <!-- Input Section -->
-        <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 py-4 bg-white border-t border-gray-200 glass-effect">
-            <div class="flex gap-2">
-                <input 
-                    type="text" 
-                    id="foodInput" 
-                    placeholder="z.B. 300g Magerquark + Banane..." 
-                    class="flex-1 px-4 py-3 bg-gray-100 rounded-full text-sm border border-gray-300 focus:border-blue-500 focus:bg-white transition"
-                />
-                <button 
-                    id="addBtn" 
-                    class="ios-button px-4 py-3 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition flex items-center justify-center min-w-[50px]"
-                >
-                    <span id="addBtnText">Los</span>
-                    <div id="addSpinner" class="spinner hidden ml-2"></div>
-                </button>
+        <div id="resultDashboard" class="hidden mt-6 pt-6 border-t border-gray-700 grid grid-cols-2 gap-4">
+            <div class="bg-gray-750 p-3 rounded-lg border border-gray-700 text-center col-span-2">
+                <span class="block text-xs uppercase tracking-wider text-gray-400">Kalorien</span>
+                <span id="valKcal" class="text-3xl font-bold text-emerald-400">0</span> <span class="text-gray-400 text-sm">kcal</span>
             </div>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-end z-50 md:items-center md:justify-center">
-        <div class="bg-white w-full rounded-t-3xl md:rounded-3xl md:max-w-sm p-6 space-y-4 md:mx-auto">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-gray-900">Einstellungen</h2>
-                <button id="closeSettingsBtn" class="text-gray-500 hover:text-gray-700">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
+            <div class="bg-gray-750 p-3 rounded-lg border border-gray-700 text-center">
+                <span class="block text-xs uppercase tracking-wider text-gray-400">Protein</span>
+                <span id="valProtein" class="text-xl font-bold text-blue-400">0</span> <span class="text-gray-400 text-sm">g</span>
             </div>
-
-            <div class="space-y-3">
-                <p class="text-sm text-gray-600">Dein API-Key ist jetzt sicher über die Vercel-Cloud geschützt.</p>
+            <div class="bg-gray-750 p-3 rounded-lg border border-gray-700 text-center">
+                <span class="block text-xs uppercase tracking-wider text-gray-400">Kohlenhydrate</span>
+                <span id="valCarbs" class="text-xl font-bold text-yellow-400">0</span> <span class="text-gray-400 text-sm">g</span>
             </div>
-
-            <div class="pt-4 space-y-2 border-t border-gray-200">
-                <button id="resetDataBtn" class="ios-button w-full bg-red-100 text-red-600 py-3 rounded-xl font-semibold hover:bg-red-200 transition">
-                    Tägliche Daten löschen
-                </button>
-                <button id="exportDataBtn" class="ios-button w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">
-                    Daten exportieren (JSON)
-                </button>
+            <div class="bg-gray-750 p-3 rounded-lg border border-gray-700 text-center col-span-2">
+                <span class="block text-xs uppercase tracking-wider text-gray-400">Fett</span>
+                <span id="valFat" class="text-xl font-bold text-red-400">0</span> <span class="text-gray-400 text-sm">g</span>
             </div>
         </div>
     </div>
 
     <script>
-        // ==================== STATE MANAGEMENT ====================
-        const state = {
-            meals: [],
-        };
+        async function trackMeal() {
+            const foodInput = document.getElementById('foodInput');
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('errorMessage');
+            const resultDashboard = document.getElementById('resultDashboard');
 
-        const CONFIG = {
-            API_ENDPOINT: '/api/analyze', // Zeigt jetzt direkt auf deine Serverless Function
-            STORAGE_KEY: 'nutrition_meals_',
-        };
+            const foodText = foodInput.value.trim();
+            if (!foodText) return;
 
-        // ==================== INITIALIZATION ====================
-        document.addEventListener('DOMContentLoaded', () => {
-            loadMealsFromStorage();
-            setupEventListeners();
-            updateUI();
-            updateDateDisplay();
-        });
-
-        // ==================== EVENT LISTENERS ====================
-        function setupEventListeners() {
-            document.getElementById('addBtn').addEventListener('click', handleAddMeal);
-            document.getElementById('foodInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleAddMeal();
-            });
-
-            document.getElementById('settingsBtn').addEventListener('click', () => {
-                document.getElementById('settingsModal').classList.remove('hidden');
-            });
-
-            document.getElementById('closeSettingsBtn').addEventListener('click', () => {
-                document.getElementById('settingsModal').classList.add('hidden');
-            });
-
-            document.getElementById('resetDataBtn').addEventListener('click', () => {
-                if (confirm('Alle Mahlzeiten heute löschen?')) {
-                    state.meals = [];
-                    clearMealsFromStorage();
-                    updateUI();
-                    showNotification('Daten gelöscht ✓', 'success');
-                }
-            });
-
-            document.getElementById('exportDataBtn').addEventListener('click', () => {
-                const data = {
-                    date: new Date().toISOString().split('T')[0],
-                    meals: state.meals,
-                    totals: calculateTotals()
-                };
-                const json = JSON.stringify(data, null, 2);
-                downloadJSON(json, `nutrition_${data.date}.json`);
-                showNotification('Exportiert ✓', 'success');
-            });
-
-            document.getElementById('settingsModal').addEventListener('click', (e) => {
-                if (e.target.id === 'settingsModal') {
-                    document.getElementById('settingsModal').classList.add('hidden');
-                }
-            });
-        }
-
-        // ==================== MAIN FUNCTIONALITY ====================
-        async function handleAddMeal() {
-            const input = document.getElementById('foodInput').value.trim();
-            if (!input) {
-                showNotification('Bitte Mahlzeit eingeben', 'warning');
-                return;
-            }
-
-            setLoadingState(true);
+            // UI Reset
+            submitBtn.disabled = true;
+            loading.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            resultDashboard.classList.add('hidden');
 
             try {
-                const nutritionData = await analyzeWithGemini(input);
-                if (nutritionData) {
-                    state.meals.push({
-                        id: Date.now(),
-                        description: input,
-                        ...nutritionData,
-                        timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-                    });
-                    saveMealsToStorage();
-                    updateUI();
-                    document.getElementById('foodInput').value = '';
-                    showNotification('Mahlzeit hinzugefügt ✓', 'success');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                // ÄNDRUNG: Zeigt jetzt die echte Fehlermeldung im roten Pop-up an!
-                showNotification(error.message, 'error');
-            } finally {
-                setLoadingState(false);
-            }
-        }
-
-        async function analyzeWithGemini(foodDescription) {
-            const systemPrompt = `Du bist ein Ernährungsexperte mit Spezialwissen über deutsche Supermarkt-Produkte.
-Analysiere die eingegebene Mahlzeit und gib die Nährwerte exakt im vorgegebenen JSON-Format zurück.
-Format:
-{
-  "kcal": 350,
-  "protein": 25,
-  "carbs": 40,
-  "fat": 10
-}`;
-
-            const requestBody = {
-                contents: [
-                    {
-                        parts: [
-                            { text: systemPrompt },
-                            { text: `Analysiere: ${foodDescription}` }
-                        ]
-                    }
-                ]
-            };
-
-            try {
-                const response = await fetch(CONFIG.API_ENDPOINT, {
+                const response = await fetch('/api/analyze', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestBody)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ meal: foodText })
                 });
 
-                // NEU: Wenn ein Fehler auftritt, lesen wir die echte Nachricht aus!
+                const data = await response.json();
+
                 if (!response.ok) {
-                    const errorText = await response.json().catch(() => ({}));
-                    throw new Error(errorText.error || `Fehler ${response.status}`);
+                    throw new Error(data.error || `Server meldet Fehler ${response.status}`);
                 }
 
-                const data = await response.json();
-                const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                const nutrition = JSON.parse(responseText);
+                // Werte in das Dashboard eintragen
+                document.getElementById('valKcal').innerText = data.kcal ?? 0;
+                document.getElementById('valProtein').innerText = data.protein ?? 0;
+                document.getElementById('valCarbs').innerText = data.carbs ?? 0;
+                document.getElementById('valFat').innerText = data.fat ?? 0;
 
-                return {
-                    kcal: Math.round(nutrition.kcal || 0),
-                    protein: Math.round((nutrition.protein || 0) * 10) / 10,
-                    carbs: Math.round((nutrition.carbs || 0) * 10) / 10,
-                    fat: Math.round((nutrition.fat || 0) * 10) / 10
-                };
+                // Dashboard anzeigen
+                resultDashboard.classList.remove('hidden');
+                foodInput.value = ''; // Input leeren bei Erfolg
 
             } catch (error) {
-                console.error('Proxy Error:', error);
-                throw error; // Reicht den echten Fehler an das UI weiter
+                console.error("Tracking Error:", error);
+                errorMessage.innerText = error.message;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                loading.classList.add('hidden');
             }
         }
-
-        // ==================== UI UPDATES ====================
-        function updateUI() {
-            renderMeals();
-            updateSummary();
-        }
-
-        // (Restliche Hilfsfunktionen bleiben identisch für die Funktionalität)
-        function renderMeals() {
-            const container = document.getElementById('mealsContainer');
-            if (state.meals.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-12">
-                        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                        </svg>
-                        <p class="text-gray-400 text-sm">Füge deine erste Mahlzeit hinzu</p>
-                    </div>`;
-                return;
-            }
-            container.innerHTML = state.meals.map(meal => `
-                <div class="meal-card bg-white rounded-2xl p-4 mb-3 border border-gray-200 shadow-sm hover:shadow-md transition">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex-1">
-                            <p class="font-medium text-gray-900 text-sm">${escapeHtml(meal.description)}</p>
-                            <p class="text-xs text-gray-500 mt-1">${meal.timestamp}</p>
-                        </div>
-                        <button onclick="deleteMeal(${meal.id})" class="text-gray-400 hover:text-red-600 transition p-1">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-4 gap-2">
-                        <div class="bg-blue-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-600">Kcal</p><p class="text-sm font-bold text-blue-600">${meal.kcal}</p></div>
-                        <div class="bg-green-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-600">Protein</p><p class="text-sm font-bold text-green-600">${meal.protein}g</p></div>
-                        <div class="bg-orange-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-600">Carbs</p><p class="text-sm font-bold text-orange-600">${meal.carbs}g</p></div>
-                        <div class="bg-red-50 rounded-lg p-2 text-center"><p class="text-xs text-gray-600">Fett</p><p class="text-sm font-bold text-red-600">${meal.fat}g</p></div>
-                    </div>
-                </div>`).join('');
-        }
-
-        function updateSummary() {
-            const totals = calculateTotals();
-            document.getElementById('totalKcal').textContent = totals.kcal;
-            document.getElementById('totalProtein').textContent = `${totals.protein}g`;
-            document.getElementById('totalCarbs').textContent = `${totals.carbs}g`;
-            document.getElementById('totalFat').textContent = `${totals.fat}g`;
-        }
-
-        function calculateTotals() {
-            return {
-                kcal: state.meals.reduce((sum, meal) => sum + meal.kcal, 0),
-                protein: Math.round(state.meals.reduce((sum, meal) => sum + meal.protein, 0) * 10) / 10,
-                carbs: Math.round(state.meals.reduce((sum, meal) => sum + meal.carbs, 0) * 10) / 10,
-                fat: Math.round(state.meals.reduce((sum, meal) => sum + meal.fat, 0) * 10) / 10
-            };
-        }
-
-        function updateDateDisplay() {
-            const today = new Date();
-            const options = { weekday: 'long', day: 'numeric', month: 'long' };
-            const dateStr = today.toLocaleDateString('de-DE', options);
-            document.getElementById('dateDisplay').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
-        }
-
-        function saveMealsToStorage() {
-            const today = new Date().toISOString().split('T')[0];
-            localStorage.setItem(CONFIG.STORAGE_KEY + today, JSON.stringify(state.meals));
-        }
-
-        function loadMealsFromStorage() {
-            const today = new Date().toISOString().split('T')[0];
-            const stored = localStorage.getItem(CONFIG.STORAGE_KEY + today);
-            state.meals = stored ? JSON.parse(stored) : [];
-        }
-
-        function clearMealsFromStorage() {
-            const today = new Date().toISOString().split('T')[0];
-            localStorage.removeItem(CONFIG.STORAGE_KEY + today);
-        }
-
-        function deleteMeal(id) {
-            state.meals = state.meals.filter(meal => meal.id !== id);
-            saveMealsToStorage();
-            updateUI();
-            showNotification('Gelöscht ✓', 'success');
-        }
-
-        function setLoadingState(loading) {
-            const btn = document.getElementById('addBtn');
-            const spinner = document.getElementById('addSpinner');
-            const text = document.getElementById('addBtnText');
-            if (loading) {
-                btn.disabled = true;
-                spinner.classList.remove('hidden');
-                text.textContent = '';
-                btn.style.opacity = '0.7';
-            } else {
-                btn.disabled = false;
-                spinner.classList.add('hidden');
-                text.textContent = 'Los';
-                btn.style.opacity = '1';
-            }
-        }
-
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            const colors = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-yellow-500', info: 'bg-blue-500' };
-            notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg text-sm z-40 max-w-xs`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                notification.style.transition = 'opacity 0.3s';
-                setTimeout(() => notification.remove(), 300);
-            }, 2500);
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function downloadJSON(jsonString, filename) {
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            link.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function setupMidnightReset() {
-            const now = new Date();
-            const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(0, 0, 0, 0);
-            const timeUntilMidnight = tomorrow - now;
-            setTimeout(() => {
-                clearMealsFromStorage();
-                location.reload();
-                setupMidnightReset();
-            }, timeUntilMidnight);
-        }
-        setupMidnightReset();
     </script>
 </body>
 </html>
