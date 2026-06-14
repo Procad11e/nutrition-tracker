@@ -254,7 +254,8 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Fehler bei der KI-Analyse.', 'error');
+                // ÄNDRUNG: Zeigt jetzt die echte Fehlermeldung im roten Pop-up an!
+                showNotification(error.message, 'error');
             } finally {
                 setLoadingState(false);
             }
@@ -279,11 +280,7 @@ Format:
                             { text: `Analysiere: ${foodDescription}` }
                         ]
                     }
-                ],
-                generationConfig: {
-                    temperature: 0.2,
-                    responseMimeType: "application/json"
-                }
+                ]
             };
 
             try {
@@ -295,8 +292,10 @@ Format:
                     body: JSON.stringify(requestBody)
                 });
 
+                // NEU: Wenn ein Fehler auftritt, lesen wir die echte Nachricht aus!
                 if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
+                    const errorText = await response.json().catch(() => ({}));
+                    throw new Error(errorText.error || `Fehler ${response.status}`);
                 }
 
                 const data = await response.json();
@@ -312,7 +311,7 @@ Format:
 
             } catch (error) {
                 console.error('Proxy Error:', error);
-                throw error;
+                throw error; // Reicht den echten Fehler an das UI weiter
             }
         }
 
