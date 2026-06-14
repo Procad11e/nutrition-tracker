@@ -22,8 +22,8 @@ export default async function handler(req, res) {
                 'X-Title': 'Nutrition Tracker'
             },
             body: JSON.stringify({
-                // GEÄNDERT: Auf die offizielle und gültige OpenRouter Model-ID
-                model: "google/gemini-2-flash", 
+                // JETZT KORRIGIERT: Mit der ".0" im Namen!
+                model: "google/gemini-2.0-flash", 
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userInput }
