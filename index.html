@@ -188,7 +188,7 @@
         };
 
         const CONFIG = {
-            API_ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+            API_ENDPOINT: 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent',
             STORAGE_KEY: 'nutrition_meals_',
             API_KEY_STORAGE: 'gemini_api_key',
         };
@@ -287,7 +287,7 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Fehler bei der Analyse. API Key gültig?', 'error');
+                showNotification('Fehler: ' + error.message, 'error');
             } finally {
                 setLoadingState(false);
             }
@@ -314,11 +314,19 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
                             { text: `Analysiere: ${foodDescription}` }
                         ]
                     }
-                ]
+                ],
+                generationConfig: {
+                    temperature: 0.7,
+                    topK: 40,
+                    topP: 0.95,
+                }
             };
 
             try {
-                const response = await fetch(`${CONFIG.API_ENDPOINT}?key=${encodeURIComponent(state.apiKey)}`, {
+                const url = `${CONFIG.API_ENDPOINT}?key=${encodeURIComponent(state.apiKey)}`;
+                console.log('API Call to:', url.split('?')[0]); // Log ohne Key
+                
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -328,11 +336,15 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+                    const errorMsg = errorData.error?.message || `API Error: ${response.status}`;
+                    console.error('API Error:', errorMsg);
+                    throw new Error(errorMsg);
                 }
 
                 const data = await response.json();
                 const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                
+                console.log('Raw response:', responseText);
                 
                 // Extract JSON from response
                 const jsonMatch = responseText.match(/\{[\s\S]*\}/);
