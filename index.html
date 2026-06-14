@@ -188,7 +188,7 @@
         };
 
         const CONFIG = {
-            API_ENDPOINT: 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent',
+            API_ENDPOINT: 'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent',
             STORAGE_KEY: 'nutrition_meals_',
             API_KEY_STORAGE: 'gemini_api_key',
         };
@@ -324,7 +324,7 @@ Nutze deutsche Datenbanken und Supermarkt-Informationen für genaue Schätzungen
 
             try {
                 const url = `${CONFIG.API_ENDPOINT}?key=${encodeURIComponent(state.apiKey)}`;
-                console.log('API Call to:', url.split('?')[0]); // Log ohne Key
+                console.log('Using model: gemini-2.0-flash');
                 
                 const response = await fetch(url, {
                     method: 'POST',
